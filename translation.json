@@ -1,6 +1,6 @@
 {
   "appName": "Tiny File Manager",
-  "version": "2.3.5",
+  "version": "2.3.8",
   "language": [
     {
       "name": "русский",
@@ -113,11 +113,14 @@
         "BackUp": "Back-Up",
         "SourceFolder": "Cartella di Origine",
         "Files": "File",
+	"Move": "Sposta",
         "Change": "Cambia",
         "Settings": "Impostazioni",
         "Language": "Lingua",
         "MemoryUsed": "Memoria utilizzata",
-        "PartitionSize": "Dimensione della partizione"
+        "PartitionSize": "Dimensione della partizione",
+	"ErrorReporting": "Segnala errori",
+	"ShowHiddenFiles": "Mostra file nascosti"
       }
     },
     {
@@ -944,14 +947,84 @@
         "Language": "لغة",
         "MemoryUsed": "الذاكرة المستخدمة",
         "PartitionSize": "حجم القسم",
-		
-        "Free of": "مساحة فارغة من ",
+
+		"Free of": "مساحة فارغة من ",
         "Preview": "عرض",
         "Full size": "الحجم الكلي",
-		
-        "ErrorReporting": "التبليغ باخطاء",
+		"ErrorReporting": "التبليغ باخطاء",
         "ShowHiddenFiles": "اظهار الملفات المخفية",
-        "Help": "مساعدة"
+        "Help": "مساعدة",
+
+        "Generate": "توليد",
+        "Report Issue": "التبليغ بمشكلة",
+        "Generate new password hash": "توليد هاش لكلمة المرور",
+        "Help Documents": "وثائق المساعدة",
+        "Check Latest Version": "تفقد آخر الاصدارات"
+      }
+    },
+    {
+      "name": "Česky",
+      "code": "cz",
+      "translation": {
+        "AppName": "Tiny File Manager",
+        "AppTitle": "File Manager",
+        "Login": "Přihlásit",
+        "Username": "Přihlašovací jméno",
+        "Password": "Heslo",
+        "Logout": "Odhlásit",
+        "Move": "Přesunout",
+        "Copy": "Kopírovat",
+        "Save": "Uložit",
+        "SelectAll": "Vybrat vše",
+        "UnSelectAll": "Odebrat vše",
+        "File": "Soubor",
+        "Back": "Zpět",
+        "Size": "Velikost",
+        "Perms": "Oprávnění",
+        "Modified": "Změněno",
+        "Owner": "Vlastník",
+        "Search": "Hledat",
+        "NewItem": "Nová položka",
+        "Folder": "Složka",
+        "Delete": "Smazat",
+        "Rename": "Přejmenovat",
+        "CopyTo": "Kopírovat do",
+        "DirectLink": "Přímý odkaz",
+        "UploadingFiles": "Nahrát soubory",
+        "ChangePermissions": "Změnit oprávnění",
+        "Copying": "Kopírování",
+        "CreateNewItem": "Vytvoř novou položku",
+        "Name": "Název",
+        "AdvancedEditor": "Vylepšený editor",
+        "RememberMe": "Pamatuj si mně",
+        "Actions": "Akce",
+        "Upload": "Nahrát",
+        "Cancel": "Ukončit",
+        "InvertSelection": "Obrať výběr",
+        "DestinationFolder": "Konečná složka",
+        "ItemType": "Typ položky",
+        "ItemName": "Název položky",
+        "CreateNow": "Vytvořit",
+        "Download": "Stáhnout",
+        "Open": "Otevřít",
+        "UnZip": "Rozbalit",
+        "UnZipToFolder": "Rozbalit do",
+        "Edit": "Úpravy",
+        "NormalEditor": "Editor",
+        "BackUp": "Záloha",
+        "SourceFolder": "Zdrojová složka",
+        "Files": "Soubory",
+        "Change": "Změnit",
+        "Settings": "Nastavení",
+        "Language": "Jazyk",
+        "MemoryUsed": "Využitá paměť",
+        "PartitionSize": "Velikost oddílu",
+        "ErrorReporting": "Hlášení chyb",
+        "ShowHiddenFiles": "Zobrazit skryté soubory",
+        "Preview": "Náhled",
+        "Help": "Pomoc",
+        "FullSize": "Plná velikost",
+        "FreeOf": "volné z"
       }
     }
   ]
