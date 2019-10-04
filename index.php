@@ -146,7 +146,7 @@ $calc_folder = isset($cfg->data['calc_folder']) ? $cfg->data['calc_folder'] : tr
 
 //available languages
 $lang_list = array(
-    'en' => 'English'
+    'en' => 'English',
     'id' => 'Bahasa Indonesia'
 );
 
