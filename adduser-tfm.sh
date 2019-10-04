@@ -27,11 +27,10 @@ PASSHASH=""
 ALGO="PASSWORD_DEFAULT"
 
 #BASE_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )
-BASE_DIR="/home"
+TFM_DIR="/usr/share/nginx/html/lcp/filemanager"
 #STORAGE_DIR="storage"
-STORAGE_DIR=""
 #STORAGE_PATH="${BASE_DIR}/${STORAGE_DIR}"
-STORAGE_PATH="${BASE_DIR}"
+STORAGE_PATH="/home"
 
 if [[ -z "${USERNAME}" || -z "${PASSWORD}" ]]; then
     echo -e "USERNAME or PASSWORD is required.\nCommand: ${APP_NAME} username password"
@@ -69,7 +68,7 @@ fi
 
 # Update TFM config #
 
-TFMUSEREXIST=$(grep -qwE "${USERNAME}" config/auth.php && echo true || echo false)
+TFMUSEREXIST=$(grep -qwE "${USERNAME}" "${TFM_DIR}/config/auth.php" && echo true || echo false)
 
 if [[ "${TFMUSEREXIST}" == false ]]; then
     if [[ -n $(command -v php) ]]; then
@@ -78,10 +77,10 @@ if [[ "${TFMUSEREXIST}" == false ]]; then
     fi
 
     # add new user auth
-    sed -i "/^];/i \    '${USERNAME}'\ =>\ '${PASSHASH}'," config/auth.php
+    sed -i "/^];/i \    '${USERNAME}'\ =>\ '${PASSHASH}'," "${TFM_DIR}/config/auth.php"
 
     # add new user directory
-    USER_STORAGE_DIR="${STORAGE_DIR}/${USERNAME}"
+    #USER_STORAGE_DIR="${STORAGE_DIR}/${USERNAME}"
     USER_STORAGE_PATH="${STORAGE_PATH}/${USERNAME}"
 
     if [[ ! -d "${USER_STORAGE_PATH}" ]]; then
@@ -90,7 +89,7 @@ if [[ "${TFMUSEREXIST}" == false ]]; then
     chown -hR "${USERNAME}":"${USERNAME}" "${USER_STORAGE_PATH}"
 
     #sed -i "/^];/i \    '${USERNAME}'\ =>\ '${USER_STORAGE_DIR}'," config/directories.php
-    sed -i "/^];/i \    '${USERNAME}'\ =>\ '${USER_STORAGE_PATH}'," config/directories.php
+    sed -i "/^];/i \    '${USERNAME}'\ =>\ '${USER_STORAGE_PATH}'," "${TFM_DIR}/config/directories.php"
 
     echo -e "New user has been added to the TFM auth config.\n
 USERNAME: $USERNAME
