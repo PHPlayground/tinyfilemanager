@@ -15,51 +15,89 @@
 # | Authors: Edi Septriyanto <eslabs.id@gmail.com>                          |
 # +-------------------------------------------------------------------------+
 
-Username=$1
-Password=$2
-Passhash=""
-Algo="PASSWORD_DEFAULT"
+set -e
 
-BaseDir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )
-StorageDir="storage"
-StoragePath="${BaseDir}/${StorageDir}"
+# Version Control.
+APP_NAME=$(basename "$0")
+APP_VERSION="1.3.0"
 
-if [[ -z $Username || -z $Password ]]; then
-    echo -e "Username or Password is required.\nCommand: adduser.sh username password"
+USERNAME=$1
+PASSWORD=$2
+PASSHASH=""
+ALGO="PASSWORD_DEFAULT"
+
+#BASE_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )
+BASE_DIR="/home"
+#STORAGE_DIR="storage"
+STORAGE_DIR=""
+#STORAGE_PATH="${BASE_DIR}/${STORAGE_DIR}"
+STORAGE_PATH="${BASE_DIR}"
+
+if [[ -z "${USERNAME}" || -z "${PASSWORD}" ]]; then
+    echo -e "USERNAME or PASSWORD is required.\nCommand: ${APP_NAME} username password"
     exit 1
 fi
 
-# Update config #
+if [[ -z $(getent passwd "${USERNAME}") ]]; then
+    echo "System account for ${USERNAME} not found. Attempts to create it..."
+    
+    useradd -d "/home/${USERNAME}" -m -s /bin/bash "${USERNAME}"
+    echo "${USERNAME}:${PASSWORD}" | chpasswd
 
-UserExist=$(grep -qwE "${Username}" config/auth.php && echo True || echo False)
+    # Create default directories.
+    mkdir -p "/home/${USERNAME}/webapps"
+    chown -hR "${USERNAME}:${USERNAME}" "/home/${USERNAME}"
 
-if [[ "${UserExist}" == False ]]; then
+    # Add account credentials to /srv/.htpasswd.
+    if [ ! -f "/srv/.htpasswd" ]; then
+        touch /srv/.htpasswd
+    fi
 
-    if [[ -n $(which php) ]]; then
-        PHP_CMD="echo password_hash(\"${Password}\", ${Algo});"
-        Passhash=$(php -r "${PHP_CMD}")
+    # Generate passhword hash.
+    if [[ -n $(command -v mkpasswd) ]]; then
+        PASSWORD_HASH=$(mkpasswd --method=sha-256 "${PASSWORD}")
+        sed -i "/^${USERNAME}:/d" /srv/.htpasswd
+        echo "${USERNAME}:${PASSWORD_HASH}" >> /srv/.htpasswd
+    elif [[ -n $(command -v htpasswd) ]]; then
+        htpasswd -b /srv/.htpasswd "${USERNAME}" "${PASSWORD}"
+    else
+        PASSWORD_HASH=$(openssl passwd -1 "${PASSWORD}")
+        sed -i "/^${USERNAME}:/d" /srv/.htpasswd
+        echo "${USERNAME}:${PASSWORD_HASH}" >> /srv/.htpasswd
+    fi
+fi
+
+# Update TFM config #
+
+TFMUSEREXIST=$(grep -qwE "${USERNAME}" config/auth.php && echo true || echo false)
+
+if [[ "${TFMUSEREXIST}" == false ]]; then
+    if [[ -n $(command -v php) ]]; then
+        PHP_CMD="echo password_hash(\"${PASSWORD}\", ${ALGO});"
+        PASSHASH=$(php -r "${PHP_CMD}")
     fi
 
     # add new user auth
-    sed -i "/^];/i \    '${Username}'\ =>\ '${Passhash}'," config/auth.php
+    sed -i "/^];/i \    '${USERNAME}'\ =>\ '${PASSHASH}'," config/auth.php
 
     # add new user directory
-    UserStorageDir="${StorageDir}/${Username}"
-    UserStoragePath="${StoragePath}/${Username}"
+    USER_STORAGE_DIR="${STORAGE_DIR}/${USERNAME}"
+    USER_STORAGE_PATH="${STORAGE_PATH}/${USERNAME}"
 
-    if [[ ! -d $UserStoragePath ]]; then
-        mkdir $UserStoragePath
+    if [[ ! -d "${USER_STORAGE_PATH}" ]]; then
+        mkdir -p "${USER_STORAGE_PATH}"
     fi
+    chown -hR "${USERNAME}":"${USERNAME}" "${USER_STORAGE_PATH}"
 
-    sed -i "/^];/i \    '${Username}'\ =>\ '${UserStorageDir}'," config/directories.php
+    #sed -i "/^];/i \    '${USERNAME}'\ =>\ '${USER_STORAGE_DIR}'," config/directories.php
+    sed -i "/^];/i \    '${USERNAME}'\ =>\ '${USER_STORAGE_PATH}'," config/directories.php
 
-    echo -e "New user added to the auth users.\n
-Username: $Username
-Password: $Password
-Password Hash: $Passhash
-Hash Algorithm: $Algo
-Directory Path: $UserStoragePath"
-
+    echo -e "New user has been added to the TFM auth config.\n
+USERNAME: $USERNAME
+PASSWORD: $PASSWORD
+PASSWORD Hash: $PASSHASH
+Directory Path: $USER_STORAGE_PATH"
 else
-    echo "User $Username already exists"
+    echo "User $USERNAME already exists"
 fi
+

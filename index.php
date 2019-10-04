@@ -1459,8 +1459,13 @@ if (isset($_GET['view'])) {
                 </p>
                 <p>
                     <b><a href="?p=<?php echo urlencode(FM_PATH) ?>&amp;dl=<?php echo urlencode($file) ?>"><i class="fa fa-cloud-download"></i> <?php echo lng('Download') ?></a></b> &nbsp;
+                    <?php
+                    $file_parts = pathinfo($file);
+                    if ($file_parts['extension'] != 'php' || $file_parts['extension'] != 'php7') :
+                    ?>
                     <b><a href="<?php echo fm_enc($file_url) ?>" target="_blank"><i class="fa fa-external-link-square"></i> <?php echo lng('Open') ?></a></b>
                     &nbsp;
+                    <?php endif; ?>
                     <?php
                     // ZIP actions
                     if (!FM_READONLY && ($is_zip || $is_gzip) && $filenames !== false) {
@@ -1857,7 +1862,11 @@ $all_files_size = 0;
                             <a title="<?php echo lng('CopyTo') ?>..."
                                href="?p=<?php echo urlencode(FM_PATH) ?>&amp;copy=<?php echo urlencode(trim(FM_PATH . '/' . $f, '/')) ?>"><i class="fa fa-files-o"></i></a>
                         <?php endif; ?>
+                        <?php $fparts = pathinfo($f); if ($fparts['extension'] == 'php' || $fparts['extension'] == 'php7') : ?>
+                        <a title="<?php echo lng('DirectLink (Not allowed)') ?>" href="#"><i class="fa fa-link"></i></a>
+                        <?php else: ?>
                         <a title="<?php echo lng('DirectLink') ?>" href="<?php echo fm_enc(FM_ROOT_URL . (FM_PATH != '' ? '/' . FM_PATH : '') . '/' . $f) ?>" target="_blank"><i class="fa fa-link"></i></a>
+                        <?php endif; ?>
                         <a title="<?php echo lng('Download') ?>" href="?p=<?php echo urlencode(FM_PATH) ?>&amp;dl=<?php echo urlencode($f) ?>"><i class="fa fa-download"></i></a>
                     </td>
                 </tr>
