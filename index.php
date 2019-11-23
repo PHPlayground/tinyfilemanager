@@ -1460,11 +1460,10 @@ if (isset($_GET['view'])) {
                 <p>
                     <b><a href="?p=<?php echo urlencode(FM_PATH) ?>&amp;dl=<?php echo urlencode($file) ?>"><i class="fa fa-cloud-download"></i> <?php echo lng('Download') ?></a></b> &nbsp;
                     <?php
-                    $file_parts = pathinfo($file);
-                    if ($file_parts['extension'] != 'php' || $file_parts['extension'] != 'php7') :
+                    $file_parts = pathinfo($file_path);
+                    if ($file_parts['extension'] != 'php' && $file_parts['extension'] != 'php7') :
                     ?>
-                    <b><a href="<?php echo fm_enc($file_url) ?>" target="_blank"><i class="fa fa-external-link-square"></i> <?php echo lng('Open') ?></a></b>
-                    &nbsp;
+                    <b><a href="<?php echo fm_enc($file_url) ?>" target="_blank"><i class="fa fa-external-link-square"></i> <?php echo lng('Open') ?></a></b> &nbsp;
                     <?php endif; ?>
                     <?php
                     // ZIP actions
