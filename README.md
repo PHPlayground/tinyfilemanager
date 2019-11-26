@@ -1,4 +1,4 @@
-# Tiny File Manager
+# Tiny File Manager MOD for [LEMPer](https://github.com/joglomedia/LEMPer)
 
 
 [![Live demo](https://img.shields.io/badge/Live-Demo-brightgreen.svg?style=flat-square)](https://tinyfilemanager.github.io/demo/)
