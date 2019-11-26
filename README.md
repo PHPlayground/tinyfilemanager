@@ -13,6 +13,9 @@
 
  Login Details : admin/admin@123 | user/12345
 
+## Add new user
+
+./adduser-tfm username password
 
 ## Documents
 [TinyFileManager.github.io](https://tinyfilemanager.github.io/)  | [Password Generater](https://tinyfilemanager.github.io/docs/pwd.html)
