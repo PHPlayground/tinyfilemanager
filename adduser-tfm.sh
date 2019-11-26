@@ -28,29 +28,33 @@ fi
 APP_NAME=$(basename "$0")
 #APP_VERSION="1.3.0"
 
+# TinyFileManager storge path.
+#BASE_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )
+#STORAGE_DIR="storage"
+#STORAGE_PATH="${BASE_DIR}/${STORAGE_DIR}"
+STORAGE_PATH="/home"
+
+# TinyFileManager installation path.
+TFM_DIR="/usr/share/nginx/html/lcp/filemanager"
+
+# Credentials.
 USERNAME=$1
 PASSWORD=$2
 PASSHASH=""
 ALGO="PASSWORD_DEFAULT"
 
 # Export LEMPer config.
-if [ -f /etc/lemper.conf ]; then
+if [ -f /etc/lemper/lemper.conf ]; then
     # Clean environemnt first.
     # shellcheck source=.env.dist
     # shellcheck disable=SC2046
-    unset $(grep -v '^#' /etc/lemper.conf | grep -v '^\[' | sed -E 's/(.*)=.*/\1/' | xargs)
+    unset $(grep -v '^#' /etc/lemper/lemper.conf | grep -v '^\[' | sed -E 's/(.*)=.*/\1/' | xargs)
 
     # shellcheck source=.env.dist
     # shellcheck disable=SC1091
     # shellcheck disable=SC1094
-    source <(grep -v '^#' /etc/lemper.conf | grep -v '^\[' | sed -E 's|^(.+)=(.*)$|: ${\1=\2}; export \1|g')
+    source <(grep -v '^#' /etc/lemper/lemper.conf | grep -v '^\[' | sed -E 's|^(.+)=(.*)$|: ${\1=\2}; export \1|g')
 fi
-
-#BASE_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )
-TFM_DIR="/usr/share/nginx/html/lcp/filemanager"
-#STORAGE_DIR="storage"
-#STORAGE_PATH="${BASE_DIR}/${STORAGE_DIR}"
-STORAGE_PATH="/home"
 
 if [[ -z "${USERNAME}" || -z "${PASSWORD}" ]]; then
     echo -e "USERNAME or PASSWORD is required.\nCommand: ${APP_NAME} username password"
@@ -99,26 +103,28 @@ if [[ ${TFM_USER_EXIST} == false ]]; then
     if [[ -n $(command -v php) ]]; then
         PHP_CMD="echo password_hash(\"${PASSWORD}\", ${ALGO});"
         PASSHASH=$(php -r "${PHP_CMD}")
+
+        # Add new user auth to TFM config.
+        sed -i "/^];/i \    '${USERNAME}'\ =>\ '${PASSHASH}'," "${TFM_DIR}/config/auth.php"
+
+        # Add new user directory to TFM config.
+        if [[ ! -d "${USER_STORAGE_PATH}" ]]; then
+            mkdir -p "${USER_STORAGE_PATH}"
+        fi
+
+        chown -hR "${USERNAME}":"${USERNAME}" "${USER_STORAGE_PATH}"
+
+        #sed -i "/^];/i \    '${USERNAME}'\ =>\ '${USER_STORAGE_DIR}'," config/directories.php
+        sed -i "/^];/i \    '${USERNAME}'\ =>\ '${USER_STORAGE_PATH}'," "${TFM_DIR}/config/directories.php"
+
+        echo -e "New user has been added to the TinyFileManager auth config.\n
+Username      : $USERNAME
+Password      : $PASSWORD
+Password Hash : $PASSHASH
+Storage Path  : $USER_STORAGE_PATH"
+    else
+        echo "An error occured while adding new user."
     fi
-
-    # Add new user auth to TFM config.
-    sed -i "/^];/i \    '${USERNAME}'\ =>\ '${PASSHASH}'," "${TFM_DIR}/config/auth.php"
-
-    # Add new user directory to TFM config.
-    if [[ ! -d "${USER_STORAGE_PATH}" ]]; then
-        mkdir -p "${USER_STORAGE_PATH}"
-    fi
-
-    chown -hR "${USERNAME}":"${USERNAME}" "${USER_STORAGE_PATH}"
-
-    #sed -i "/^];/i \    '${USERNAME}'\ =>\ '${USER_STORAGE_DIR}'," config/directories.php
-    sed -i "/^];/i \    '${USERNAME}'\ =>\ '${USER_STORAGE_PATH}'," "${TFM_DIR}/config/directories.php"
-
-    echo -e "New user has been added to the TFM auth config.\n
-Username: $USERNAME
-Password: $PASSWORD
-Password Hash: $PASSHASH
-Directory Path: $USER_STORAGE_PATH"
 else
     echo "User $USERNAME already exists"
 fi
