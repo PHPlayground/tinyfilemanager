@@ -17,31 +17,35 @@
 
 set -e
 
+# Version control.
+APP_NAME=$(basename "$0")
+APP_VERSION="1.0.0"
+CMD_PARENT="lemper-cli"
+CMD_NAME="db"
+
+
 # May need to run this as sudo!
 # I have it in /usr/local/bin and run command 'ngxvhost' from anywhere, using sudo.
 if [ "$(id -u)" -ne 0 ]; then
     echo "This command can only be used by root."
-    exit 1  #error
+    exit 1
 fi
 
-# Version Control.
-APP_NAME=$(basename "$0")
-#APP_VERSION="1.3.0"
+
+# Credentials.
+USERNAME=${1}
+PASSWORD=${2}
+PASSHASH=""
+HASHALGO="PASSWORD_DEFAULT"
 
 # TinyFileManager storge path.
 #BASE_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )
 #STORAGE_DIR="storage"
-#STORAGE_PATH="${BASE_DIR}/${STORAGE_DIR}"
-STORAGE_PATH="/home"
+#ROOT_STORAGE_PATH="${BASE_DIR}/${STORAGE_DIR}"
+ROOT_STORAGE_PATH=${3:-"/home"}
 
 # TinyFileManager installation path.
 TFM_DIR="/usr/share/nginx/html/lcp/filemanager"
-
-# Credentials.
-USERNAME=$1
-PASSWORD=$2
-PASSHASH=""
-ALGO="PASSWORD_DEFAULT"
 
 # Export LEMPer config.
 if [ -f /etc/lemper/lemper.conf ]; then
@@ -62,7 +66,7 @@ if [[ -z "${USERNAME}" || -z "${PASSWORD}" ]]; then
 fi
 
 #USER_STORAGE_DIR="${STORAGE_DIR}/${USERNAME}"
-USER_STORAGE_PATH="${STORAGE_PATH}/${USERNAME}"
+USER_STORAGE_PATH="${ROOT_STORAGE_PATH}/${USERNAME}"
 
 if [[ -z $(getent passwd "${USERNAME}") ]]; then
     echo "System account for ${USERNAME} not found. Attempts to create it..."
@@ -101,7 +105,7 @@ if [[ ${TFM_USER_EXIST} == false ]]; then
     echo "Create file manager account for ${USERNAME}"
 
     if [[ -n $(command -v php) ]]; then
-        PHP_CMD="echo password_hash(\"${PASSWORD}\", ${ALGO});"
+        PHP_CMD="echo password_hash(\"${PASSWORD}\", ${HASHALGO});"
         PASSHASH=$(php -r "${PHP_CMD}")
 
         # Add new user auth to TFM config.
