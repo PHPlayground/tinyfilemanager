@@ -75,6 +75,7 @@ $default_timezone = 'Etc/UTC'; // UTC
 
 // Root path for file manager
 // use absolute path of directory i.e: '/var/www/folder' or $_SERVER['DOCUMENT_ROOT'].'/folder'
+//$root_path = $_SERVER['DOCUMENT_ROOT'].'/lcp/filemanager';
 $root_path = $_SERVER['DOCUMENT_ROOT'].'/lcp/filemanager';
 
 // Root url for links in file manager.Relative to $http_host. Variants: '', 'path/to/subfolder'
@@ -123,7 +124,7 @@ define('MAX_UPLOAD_SIZE', '2048');
 
 // private key and session name to store to the session
 if ( !defined( 'FM_SESSION_ID')) {
-    define('FM_SESSION_ID', 'lcpfilemanager');
+    define('FM_SESSION_ID', 'filemanager');
 }
 
 // Configuration
@@ -146,8 +147,7 @@ $calc_folder = isset($cfg->data['calc_folder']) ? $cfg->data['calc_folder'] : tr
 
 //available languages
 $lang_list = array(
-    'en' => 'English',
-    'id' => 'Bahasa Indonesia'
+    'en' => 'English'
 );
 
 if ($report_errors == true) {
@@ -335,7 +335,7 @@ if ($use_auth && isset($_SESSION[FM_SESSION_ID]['logged'])) {
 // clean and check $root_path
 $root_path = rtrim($root_path, '\\/');
 $root_path = str_replace('\\', '/', $root_path);
-if (!@is_dir($root_path)) {
+if (! is_dir($root_path)) {
     echo "<h1>Root path \"{$root_path}\" not found!</h1>";
     exit;
 }
@@ -403,7 +403,6 @@ if (isset($_POST['ajax']) && !FM_READONLY) {
         $fd = fopen($file_path, "w");
         @fwrite($fd, $writedata);
         fclose($fd);
-        fm_set_msg('successful save!', 'alert');
         die(true);
     }
     
@@ -998,7 +997,8 @@ $parent = fm_get_parent_path(FM_PATH);
 $objects = is_readable($path) ? scandir($path) : array();
 $folders = array();
 $files = array();
-if (is_array($objects)) {
+$current_path = array_slice(explode("/",$path), -1)[0];
+if (is_array($objects) && !in_array($current_path, $GLOBALS['exclude_items'])) {
     foreach ($objects as $file) {
         if ($file == '.' || $file == '..' && in_array($file, $GLOBALS['exclude_items'])) {
             continue;
@@ -1459,12 +1459,8 @@ if (isset($_GET['view'])) {
                 </p>
                 <p>
                     <b><a href="?p=<?php echo urlencode(FM_PATH) ?>&amp;dl=<?php echo urlencode($file) ?>"><i class="fa fa-cloud-download"></i> <?php echo lng('Download') ?></a></b> &nbsp;
-                    <?php
-                    $file_parts = pathinfo($file_path);
-                    if ($file_parts['extension'] != 'php' && $file_parts['extension'] != 'php7') :
-                    ?>
-                    <b><a href="<?php echo fm_enc($file_url) ?>" target="_blank"><i class="fa fa-external-link-square"></i> <?php echo lng('Open') ?></a></b> &nbsp;
-                    <?php endif; ?>
+                    <b><a href="<?php echo fm_enc($file_url) ?>" target="_blank"><i class="fa fa-external-link-square"></i> <?php echo lng('Open') ?></a></b>
+                    &nbsp;
                     <?php
                     // ZIP actions
                     if (!FM_READONLY && ($is_zip || $is_gzip) && $filenames !== false) {
@@ -1611,6 +1607,7 @@ if (isset($_GET['edit'])) {
                             <button data-cmd="none" data-option="help" class="btn btn-sm btn-outline-secondary" id="js-ace-goLine" title="Help"><i class="fa fa-question" title="Help"></i></button>
                             <select id="js-ace-mode" data-type="mode" title="Select Document Type" class="btn-outline-secondary border-left-0 d-none d-md-block"><option>-- Select Mode --</option></select>
                             <select id="js-ace-theme" data-type="theme" title="Select Theme" class="btn-outline-secondary border-left-0 d-none d-lg-block"><option>-- Select Theme --</option></select>
+                            <select id="js-ace-fontSize" data-type="fontSize" title="Selct Font Size" class="btn-outline-secondary border-left-0 d-none d-lg-block"><option>-- Select Font Size --</option></select>
                         </div>
                     <?php } ?>
                 </div>
@@ -1861,11 +1858,7 @@ $all_files_size = 0;
                             <a title="<?php echo lng('CopyTo') ?>..."
                                href="?p=<?php echo urlencode(FM_PATH) ?>&amp;copy=<?php echo urlencode(trim(FM_PATH . '/' . $f, '/')) ?>"><i class="fa fa-files-o"></i></a>
                         <?php endif; ?>
-                        <?php $fparts = pathinfo($f); if ($fparts['extension'] == 'php' || $fparts['extension'] == 'php7') : ?>
-                        <a title="<?php echo lng('DirectLink (Not allowed)') ?>" href="#"><i class="fa fa-link"></i></a>
-                        <?php else: ?>
                         <a title="<?php echo lng('DirectLink') ?>" href="<?php echo fm_enc(FM_ROOT_URL . (FM_PATH != '' ? '/' . FM_PATH : '') . '/' . $f) ?>" target="_blank"><i class="fa fa-link"></i></a>
-                        <?php endif; ?>
                         <a title="<?php echo lng('Download') ?>" href="?p=<?php echo urlencode(FM_PATH) ?>&amp;dl=<?php echo urlencode($f) ?>"><i class="fa fa-download"></i></a>
                     </td>
                 </tr>
@@ -2978,6 +2971,12 @@ function fm_show_nav_path($path)
                             <a title="<?php echo lng('Logout') ?>" class="dropdown-item nav-link" href="?logout=1"><i class="fa fa-sign-out" aria-hidden="true"></i> <?php echo lng('Logout') ?></a>
                         </div>
                     </li>
+                    <?php else: ?>
+                        <?php if (!FM_READONLY): ?>
+                            <li class="nav-item">
+                                <a title="<?php echo lng('Settings') ?>" class="dropdown-item nav-link" href="?p=<?php echo urlencode(FM_PATH) ?>&amp;settings=1"><i class="fa fa-cog" aria-hidden="true"></i> <?php echo lng('Settings') ?></a>
+                            </li>
+                        <?php endif; ?>
                     <?php endif; ?>
                 </ul>
             </div>
@@ -3358,6 +3357,48 @@ $isStickyNavBar = $sticky_navbar ? 'navbar-fixed' : 'navbar-normal';
         .ekko-lightbox-nav-overlay a:hover{
             color: #20507D;
         }
+
+        #snackbar {
+          visibility: hidden;
+          min-width: 250px;
+          margin-left: -125px;
+          background-color: #333;
+          color: #fff;
+          text-align: center;
+          border-radius: 2px;
+          padding: 16px;
+          position: fixed;
+          z-index: 1;
+          left: 50%;
+          bottom: 30px;
+          font-size: 17px;
+        }
+
+        #snackbar.show {
+          visibility: visible;
+          -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+          animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
+
+        @-webkit-keyframes fadein {
+          from {bottom: 0; opacity: 0;} 
+          to {bottom: 30px; opacity: 1;}
+        }
+
+        @keyframes fadein {
+          from {bottom: 0; opacity: 0;}
+          to {bottom: 30px; opacity: 1;}
+        }
+
+        @-webkit-keyframes fadeout {
+          from {bottom: 30px; opacity: 1;} 
+          to {bottom: 0; opacity: 0;}
+        }
+
+        @keyframes fadeout {
+          from {bottom: 30px; opacity: 1;}
+          to {bottom: 0; opacity: 0;}
+        }
         #main-table span.badge{border-bottom:2px solid #f8f9fa}#main-table span.badge:nth-child(1){border-color:#df4227}#main-table span.badge:nth-child(2){border-color:#f8b600}#main-table span.badge:nth-child(3){border-color:#00bd60}#main-table span.badge:nth-child(4){border-color:#4581ff}#main-table span.badge:nth-child(5){border-color:#ac68fc}#main-table span.badge:nth-child(6){border-color:#45c3d2}
         @media only screen and (min-device-width : 768px) and (max-device-width : 1024px) and (orientation : landscape) and (-webkit-min-device-pixel-ratio: 2) { .navbar-collapse .col-xs-6.text-right { padding: 0; } }
         .btn.active.focus,.btn.active:focus,.btn.focus,.btn.focus:active,.btn:active:focus,.btn:focus{outline:0!important;outline-offset:0!important;background-image:none!important;-webkit-box-shadow:none!important;box-shadow:none!important}
@@ -3476,6 +3517,8 @@ $isStickyNavBar = $sticky_navbar ? 'navbar-fixed' : 'navbar-normal';
             4 == n.readyState && 200 == n.status && alert(n.responseText)
         }, n.send(a), !1
     }
+    // Toast message
+    function toast(txt) { var x = document.getElementById("snackbar");x.innerHTML=txt;x.className = "show";setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000); }
     //Save file
     function edit_save(e, t) {
         var n = "ace" == t ? editor.getSession().getValue() : document.getElementById("normal-editor").value;
@@ -3490,8 +3533,8 @@ $isStickyNavBar = $sticky_navbar ? 'navbar-fixed' : 'navbar-normal';
                     data: JSON.stringify(data),
                     contentType: "multipart/form-data-encoded; charset=utf-8",
                     //dataType: "json",
-                    success: function(mes){window.onbeforeunload = function() {return}},
-                    failure: function(mes) {alert("error");}
+                    success: function(mes){toast("Saved Successfully"); window.onbeforeunload = function() {return}},
+                    failure: function(mes) {toast("Error: try again");}
                 });
                 
             }
@@ -3511,7 +3554,7 @@ $isStickyNavBar = $sticky_navbar ? 'navbar-fixed' : 'navbar-normal';
         if(window.config.version!=v){tplObj.content=window.config.newUpdate;}else{tplObj.content=window.config.noUpdate;}
         $('#wrapper').append(template(tpl,tplObj));$("#js-ModalCenter-1024").modal('show');}else{fm_get_config();}
     }
-    function show_new_pwd() { $(".js-new-pwd").toggleClass('hidden'); window.open("https://tinyfilemanager.github.io/docs/pwd.html", '_blank'); }
+    function show_new_pwd() { $(".js-new-pwd").toggleClass('hidden'); }
     //Save Settings
     function save_settings($this) {
         let form = $($this);
@@ -3584,10 +3627,12 @@ $isStickyNavBar = $sticky_navbar ? 'navbar-fixed' : 'navbar-normal';
             exec: function(editor) { edit_save(this, 'ace'); }
         }]);
         function renderThemeMode() {
-            var $modeEl = $("select#js-ace-mode"), $themeEl = $("select#js-ace-theme"), optionNode = function(type, arr){ var $Option = ""; $.each(arr, function(i, val) { $Option += "<option value='"+type+i+"'>" + val + "</option>"; }); return $Option; },
-                _data = {"aceTheme":{"bright":{"chrome":"Chrome","clouds":"Clouds","crimson_editor":"Crimson Editor","dawn":"Dawn","dreamweaver":"Dreamweaver","eclipse":"Eclipse","github":"GitHub","iplastic":"IPlastic","solarized_light":"Solarized Light","textmate":"TextMate","tomorrow":"Tomorrow","xcode":"XCode","kuroir":"Kuroir","katzenmilch":"KatzenMilch","sqlserver":"SQL Server"},"dark":{"ambiance":"Ambiance","chaos":"Chaos","clouds_midnight":"Clouds Midnight","dracula":"Dracula","cobalt":"Cobalt","gruvbox":"Gruvbox","gob":"Green on Black","idle_fingers":"idle Fingers","kr_theme":"krTheme","merbivore":"Merbivore","merbivore_soft":"Merbivore Soft","mono_industrial":"Mono Industrial","monokai":"Monokai","pastel_on_dark":"Pastel on dark","solarized_dark":"Solarized Dark","terminal":"Terminal","tomorrow_night":"Tomorrow Night","tomorrow_night_blue":"Tomorrow Night Blue","tomorrow_night_bright":"Tomorrow Night Bright","tomorrow_night_eighties":"Tomorrow Night 80s","twilight":"Twilight","vibrant_ink":"Vibrant Ink"}},"aceMode":{"javascript":"JavaScript","abap":"ABAP","abc":"ABC","actionscript":"ActionScript","ada":"ADA","apache_conf":"Apache Conf","asciidoc":"AsciiDoc","asl":"ASL","assembly_x86":"Assembly x86","autohotkey":"AutoHotKey","apex":"Apex","batchfile":"BatchFile","bro":"Bro","c_cpp":"C and C++","c9search":"C9Search","cirru":"Cirru","clojure":"Clojure","cobol":"Cobol","coffee":"CoffeeScript","coldfusion":"ColdFusion","csharp":"C#","csound_document":"Csound Document","csound_orchestra":"Csound","csound_score":"Csound Score","css":"CSS","curly":"Curly","d":"D","dart":"Dart","diff":"Diff","dockerfile":"Dockerfile","dot":"Dot","drools":"Drools","edifact":"Edifact","eiffel":"Eiffel","ejs":"EJS","elixir":"Elixir","elm":"Elm","erlang":"Erlang","forth":"Forth","fortran":"Fortran","fsharp":"FSharp","fsl":"FSL","ftl":"FreeMarker","gcode":"Gcode","gherkin":"Gherkin","gitignore":"Gitignore","glsl":"Glsl","gobstones":"Gobstones","golang":"Go","graphqlschema":"GraphQLSchema","groovy":"Groovy","haml":"HAML","handlebars":"Handlebars","haskell":"Haskell","haskell_cabal":"Haskell Cabal","haxe":"haXe","hjson":"Hjson","html":"HTML","html_elixir":"HTML (Elixir)","html_ruby":"HTML (Ruby)","ini":"INI","io":"Io","jack":"Jack","jade":"Jade","java":"Java","json":"JSON","jsoniq":"JSONiq","jsp":"JSP","jssm":"JSSM","jsx":"JSX","julia":"Julia","kotlin":"Kotlin","latex":"LaTeX","less":"LESS","liquid":"Liquid","lisp":"Lisp","livescript":"LiveScript","logiql":"LogiQL","lsl":"LSL","lua":"Lua","luapage":"LuaPage","lucene":"Lucene","makefile":"Makefile","markdown":"Markdown","mask":"Mask","matlab":"MATLAB","maze":"Maze","mel":"MEL","mixal":"MIXAL","mushcode":"MUSHCode","mysql":"MySQL","nix":"Nix","nsis":"NSIS","objectivec":"Objective-C","ocaml":"OCaml","pascal":"Pascal","perl":"Perl","perl6":"Perl 6","pgsql":"pgSQL","php_laravel_blade":"PHP (Blade Template)","php":"PHP","puppet":"Puppet","pig":"Pig","powershell":"Powershell","praat":"Praat","prolog":"Prolog","properties":"Properties","protobuf":"Protobuf","python":"Python","r":"R","razor":"Razor","rdoc":"RDoc","red":"Red","rhtml":"RHTML","rst":"RST","ruby":"Ruby","rust":"Rust","sass":"SASS","scad":"SCAD","scala":"Scala","scheme":"Scheme","scss":"SCSS","sh":"SH","sjs":"SJS","slim":"Slim","smarty":"Smarty","snippets":"snippets","soy_template":"Soy Template","space":"Space","sql":"SQL","sqlserver":"SQLServer","stylus":"Stylus","svg":"SVG","swift":"Swift","tcl":"Tcl","terraform":"Terraform","tex":"Tex","text":"Text","textile":"Textile","toml":"Toml","tsx":"TSX","twig":"Twig","typescript":"Typescript","vala":"Vala","vbscript":"VBScript","velocity":"Velocity","verilog":"Verilog","vhdl":"VHDL","visualforce":"Visualforce","wollok":"Wollok","xml":"XML","xquery":"XQuery","yaml":"YAML","django":"Django"}};
+            var $modeEl = $("select#js-ace-mode"), $themeEl = $("select#js-ace-theme"), $fontSizeEl = $("select#js-ace-fontSize"), optionNode = function(type, arr){ var $Option = ""; $.each(arr, function(i, val) { $Option += "<option value='"+type+i+"'>" + val + "</option>"; }); return $Option; },
+                _data = {"aceTheme":{"bright":{"chrome":"Chrome","clouds":"Clouds","crimson_editor":"Crimson Editor","dawn":"Dawn","dreamweaver":"Dreamweaver","eclipse":"Eclipse","github":"GitHub","iplastic":"IPlastic","solarized_light":"Solarized Light","textmate":"TextMate","tomorrow":"Tomorrow","xcode":"XCode","kuroir":"Kuroir","katzenmilch":"KatzenMilch","sqlserver":"SQL Server"},"dark":{"ambiance":"Ambiance","chaos":"Chaos","clouds_midnight":"Clouds Midnight","dracula":"Dracula","cobalt":"Cobalt","gruvbox":"Gruvbox","gob":"Green on Black","idle_fingers":"idle Fingers","kr_theme":"krTheme","merbivore":"Merbivore","merbivore_soft":"Merbivore Soft","mono_industrial":"Mono Industrial","monokai":"Monokai","pastel_on_dark":"Pastel on dark","solarized_dark":"Solarized Dark","terminal":"Terminal","tomorrow_night":"Tomorrow Night","tomorrow_night_blue":"Tomorrow Night Blue","tomorrow_night_bright":"Tomorrow Night Bright","tomorrow_night_eighties":"Tomorrow Night 80s","twilight":"Twilight","vibrant_ink":"Vibrant Ink"}},"aceMode":{"javascript":"JavaScript","abap":"ABAP","abc":"ABC","actionscript":"ActionScript","ada":"ADA","apache_conf":"Apache Conf","asciidoc":"AsciiDoc","asl":"ASL","assembly_x86":"Assembly x86","autohotkey":"AutoHotKey","apex":"Apex","batchfile":"BatchFile","bro":"Bro","c_cpp":"C and C++","c9search":"C9Search","cirru":"Cirru","clojure":"Clojure","cobol":"Cobol","coffee":"CoffeeScript","coldfusion":"ColdFusion","csharp":"C#","csound_document":"Csound Document","csound_orchestra":"Csound","csound_score":"Csound Score","css":"CSS","curly":"Curly","d":"D","dart":"Dart","diff":"Diff","dockerfile":"Dockerfile","dot":"Dot","drools":"Drools","edifact":"Edifact","eiffel":"Eiffel","ejs":"EJS","elixir":"Elixir","elm":"Elm","erlang":"Erlang","forth":"Forth","fortran":"Fortran","fsharp":"FSharp","fsl":"FSL","ftl":"FreeMarker","gcode":"Gcode","gherkin":"Gherkin","gitignore":"Gitignore","glsl":"Glsl","gobstones":"Gobstones","golang":"Go","graphqlschema":"GraphQLSchema","groovy":"Groovy","haml":"HAML","handlebars":"Handlebars","haskell":"Haskell","haskell_cabal":"Haskell Cabal","haxe":"haXe","hjson":"Hjson","html":"HTML","html_elixir":"HTML (Elixir)","html_ruby":"HTML (Ruby)","ini":"INI","io":"Io","jack":"Jack","jade":"Jade","java":"Java","json":"JSON","jsoniq":"JSONiq","jsp":"JSP","jssm":"JSSM","jsx":"JSX","julia":"Julia","kotlin":"Kotlin","latex":"LaTeX","less":"LESS","liquid":"Liquid","lisp":"Lisp","livescript":"LiveScript","logiql":"LogiQL","lsl":"LSL","lua":"Lua","luapage":"LuaPage","lucene":"Lucene","makefile":"Makefile","markdown":"Markdown","mask":"Mask","matlab":"MATLAB","maze":"Maze","mel":"MEL","mixal":"MIXAL","mushcode":"MUSHCode","mysql":"MySQL","nix":"Nix","nsis":"NSIS","objectivec":"Objective-C","ocaml":"OCaml","pascal":"Pascal","perl":"Perl","perl6":"Perl 6","pgsql":"pgSQL","php_laravel_blade":"PHP (Blade Template)","php":"PHP","puppet":"Puppet","pig":"Pig","powershell":"Powershell","praat":"Praat","prolog":"Prolog","properties":"Properties","protobuf":"Protobuf","python":"Python","r":"R","razor":"Razor","rdoc":"RDoc","red":"Red","rhtml":"RHTML","rst":"RST","ruby":"Ruby","rust":"Rust","sass":"SASS","scad":"SCAD","scala":"Scala","scheme":"Scheme","scss":"SCSS","sh":"SH","sjs":"SJS","slim":"Slim","smarty":"Smarty","snippets":"snippets","soy_template":"Soy Template","space":"Space","sql":"SQL","sqlserver":"SQLServer","stylus":"Stylus","svg":"SVG","swift":"Swift","tcl":"Tcl","terraform":"Terraform","tex":"Tex","text":"Text","textile":"Textile","toml":"Toml","tsx":"TSX","twig":"Twig","typescript":"Typescript","vala":"Vala","vbscript":"VBScript","velocity":"Velocity","verilog":"Verilog","vhdl":"VHDL","visualforce":"Visualforce","wollok":"Wollok","xml":"XML","xquery":"XQuery","yaml":"YAML","django":"Django"},"fontSize":{8:8,10:10,11:11,12:12,13:13,14:14,15:15,16:16,17:17,18:18,20:20,22:22,24:24,26:26,30:30}};
             if(_data && _data.aceMode) { $modeEl.html(optionNode("ace/mode/", _data.aceMode)); }
             if(_data && _data.aceTheme) { var lightTheme = optionNode("ace/theme/", _data.aceTheme.bright), darkTheme = optionNode("ace/theme/", _data.aceTheme.dark); $themeEl.html("<optgroup label=\"Bright\">"+lightTheme+"</optgroup><optgroup label=\"Dark\">"+darkTheme+"</optgroup>");}
+            if(_data && _data.fontSize) { $fontSizeEl.html(optionNode("", _data.fontSize)); }
+            $fontSizeEl.val(12).change(); //set default font size in drop down
         }
 
         $(function(){
@@ -3609,18 +3654,21 @@ $isStickyNavBar = $sticky_navbar ? 'navbar-fixed' : 'navbar-normal';
                     }
                 }
             });
-            $("select#js-ace-mode, select#js-ace-theme").on("change", function(e){
+            $("select#js-ace-mode, select#js-ace-theme, select#js-ace-fontSize").on("change", function(e){
                 e.preventDefault();
                 let selectedValue = $(this).val(), selectionType = $(this).attr("data-type");
                 if(selectedValue && selectionType == "mode") {
                     editor.getSession().setMode(selectedValue);
                 } else if(selectedValue && selectionType == "theme") {
                     editor.setTheme(selectedValue);
+                }else if(selectedValue && selectionType == "fontSize") {
+                    editor.setFontSize(parseInt(selectedValue)); 
                 }
             });
         });
     </script>
 <?php endif; ?>
+<div id="snackbar"></div>
 </body>
 </html>
 <?php
@@ -3708,9 +3756,9 @@ function lng($txt) {
 	$tr['en']['Help Documents'] = 'Help Documents';			$tr['en']['Report Issue']		= 'Report Issue';
     $tr['en']['Generate'] 		= 'Generate';				$tr['en']['FullSize']           = 'Full Size';
     $tr['en']['FreeOf']         = 'free of';                $tr['en']['CalculateFolderSize']= 'Calculate folder size';
-    $tr['en']['Check Latest Version'] = 'Check Latest Version';
-    $tr['en']['Generate new password hash'] = 'Generate new password hash';
-    $tr['en']['HideColumns'] = 'Hide Perms/Owner columns';
+    $tr['en']['ProcessID']      = 'Process ID';
+    $tr['en']['HideColumns']    = 'Hide Perms/Owner columns';
+    $tr['en']['Check Latest Version']= 'Check Latest Version'; $tr['en']['Generate new password hash'] = 'Generate new password hash';
 
     $i18n = fm_get_translations($tr);
     $tr = $i18n ? $i18n : $tr;
@@ -3739,4 +3787,3 @@ function fm_get_images()
 }
 
 ?>
-
