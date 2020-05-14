@@ -88,13 +88,13 @@ if [[ -z $(getent passwd "${USERNAME}") ]]; then
     if [[ -n $(command -v mkpasswd) ]]; then
         PASSWORD_HASH=$(mkpasswd --method=sha-256 "${PASSWORD}")
         sed -i "/^${USERNAME}:/d" /srv/.htpasswd
-        echo "${USERNAME}:${PASSWORD_HASH}" >> /srv/.htpasswd
+        bash -c "echo '${USERNAME}:${PASSWORD_HASH}' >> /srv/.htpasswd"
     elif [[ -n $(command -v htpasswd) ]]; then
         htpasswd -b /srv/.htpasswd "${USERNAME}" "${PASSWORD}"
     else
         PASSWORD_HASH=$(openssl passwd -1 "${PASSWORD}")
         sed -i "/^${USERNAME}:/d" /srv/.htpasswd
-        echo "${USERNAME}:${PASSWORD_HASH}" >> /srv/.htpasswd
+        bash -c "echo '${USERNAME}:${PASSWORD_HASH}' >> /srv/.htpasswd"
     fi
 fi
 
