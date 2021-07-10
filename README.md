@@ -1,4 +1,4 @@
-# Tiny File Manager
+# Tiny File Manager MOD for [LEMPer](https://github.com/joglomedia/LEMPer)
 
 
 [![Live demo](https://img.shields.io/badge/Live-Demo-brightgreen.svg?style=flat-square)](https://tinyfilemanager.github.io/demo/)
@@ -13,6 +13,9 @@
 
  Login Details : admin/admin@123 | user/12345
 
+## Add new user
+
+./adduser-tfm username password
 
 ## Documents
 [TinyFileManager.github.io](https://tinyfilemanager.github.io/)  | [Password Generater](https://tinyfilemanager.github.io/docs/pwd.html)
